@@ -18,12 +18,30 @@
     h1 {
       color: #28a745;
     }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #startBtn {
+      background-color: #28a745;
+      color: white;
+    }
+    #restartBtn {
+      background-color: #ffc107;
+      color: black;
+    }
   </style>
 </head>
 <body>
   <h1>Snake Game</h1>
   <canvas id="game" width="400" height="400"></canvas>
   <p id="score">Score: 0</p>
+  <button id="startBtn">Start Game</button>
+  <button id="restartBtn" style="display:none;">Try Again</button>
 
   <script>
     // SCORM tracking function
@@ -38,8 +56,16 @@
       var API = findAPI(window);
       if (API) {
         API.LMSInitialize("");
-        API.LMSSetValue("cmi.core.lesson_status", "completed");
         API.LMSSetValue("cmi.core.score.raw", score);
+        API.LMSSetValue("cmi.core.score.min", 0);
+        API.LMSSetValue("cmi.core.score.max", 100);
+
+        if (score >= 10) {
+          API.LMSSetValue("cmi.core.lesson_status", "passed");
+        } else {
+          API.LMSSetValue("cmi.core.lesson_status", "failed");
+        }
+
         API.LMSCommit("");
         API.LMSFinish("");
       } else {
@@ -47,7 +73,6 @@
       }
     }
 
-    // Snake game logic
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
     const box = 20;
@@ -55,14 +80,38 @@
     const cols = canvas.width / box;
 
     let snake = [];
-    snake[0] = { x: 9 * box, y: 9 * box };
-    let direction = "RIGHT";
-    let food = {
-      x: Math.floor(Math.random() * cols) * box,
-      y: Math.floor(Math.random() * rows) * box
-    };
-    let score = 0;
+    let direction;
+    let food;
+    let score;
     let gameOver = false;
+    let gameInterval;
+
+    function resetGame() {
+      snake = [{ x: 9 * box, y: 9 * box }];
+      direction = "RIGHT";
+      food = {
+        x: Math.floor(Math.random() * cols) * box,
+        y: Math.floor(Math.random() * rows) * box
+      };
+      score = 0;
+      gameOver = false;
+      document.getElementById("score").innerText = "Score: 0";
+      document.getElementById("restartBtn").style.display = "none";
+    }
+
+    function startGame() {
+      resetGame();
+      gameInterval = setInterval(draw, 100);
+    }
+
+    document.getElementById("startBtn").addEventListener("click", () => {
+      startGame();
+      document.getElementById("startBtn").style.display = "none";
+    });
+
+    document.getElementById("restartBtn").addEventListener("click", () => {
+      startGame();
+    });
 
     document.addEventListener("keydown", dir);
 
@@ -109,10 +158,16 @@
         headY < 0 || headY >= canvas.height ||
         collision(newHead, snake)
       ) {
-        clearInterval(game);
+        clearInterval(gameInterval);
         gameOver = true;
         completeGame(score);
-        alert("Game Over! Your score: " + score);
+
+        if (score >= 10) {
+          alert("🎉 You passed! Score: " + score);
+        } else {
+          alert("❌ You scored " + score + ". Try again!");
+          document.getElementById("restartBtn").style.display = "inline-block";
+        }
         return;
       }
 
@@ -126,8 +181,6 @@
       }
       return false;
     }
-
-    const game = setInterval(draw, 100);
   </script>
 </body>
 </html>
